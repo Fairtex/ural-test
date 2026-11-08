@@ -10,11 +10,12 @@ function BrandOptions({ brands, selected, onSelect }) {
   const rangeExtractor = useCallback(range => (
     [...new Set([...defaultRangeExtractor(range), active])].sort((a, b) => a - b)
   ), [active])
+  const getItemKey = useCallback(index => brands[index], [brands])
   const virtual = useVirtualizer({
     count: brands.length,
     getScrollElement: () => list.current,
     estimateSize: () => 48,
-    getItemKey: index => brands[index],
+    getItemKey,
     overscan: 3,
     rangeExtractor,
   })
@@ -37,7 +38,7 @@ function BrandOptions({ brands, selected, onSelect }) {
     virtual.scrollToIndex(target, { align: 'auto' })
   }
   return (
-    <div className="brand-options" ref={list} role="listbox" aria-labelledby="brands-title"
+    <div className="brand-options" id="brand-options" ref={list} role="listbox" aria-labelledby="brands-title"
       tabIndex={0} aria-activedescendant={id + active} onKeyDown={onKeyDown}>
       <div style={{ height: virtual.getTotalSize(), position: 'relative' }}>
         {virtual.getVirtualItems().map(item => {
@@ -59,10 +60,14 @@ function BrandOptions({ brands, selected, onSelect }) {
   )
 }
 
-export default function BrandList({ brands, status, error, selected, onSelect, onRetry }) {
+export default function BrandList({ brands, status, error, selected, onSelect, onRetry, example, onExample }) {
   if (status === 'loading') return <PanelState loading title="Ищем производителей…" />
   if (status === 'error') return <PanelState error title="Ошибка поиска" description={error} onRetry={onRetry} />
   if (status === 'idle') return <PanelState icon={Factory} title="Введите артикул" description="Здесь появятся производители детали." />
+  if (!brands.length && example) return <PanelState icon={Factory} title="Артикула нет в демокаталоге"
+    description="Выберите один из демонстрационных артикулов.">
+    <button type="button" className="retry-control" onClick={() => onExample(example)}>Показать пример {example}</button>
+  </PanelState>
   if (!brands.length) return <PanelState icon={Factory} title="Производители не найдены" description="Проверьте артикул или попробуйте другой." />
   return <BrandOptions brands={brands} selected={selected} onSelect={onSelect} />
 }

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { ArrowUpRight, Component, Database, Search, X } from 'lucide-react'
 import usePartsSearch from './model/usePartsSearch.js'
 import { isDemo } from './api/partsApi.js'
@@ -7,12 +7,36 @@ import BrandList from './ui/BrandList.jsx'
 import OffersTable from './ui/OffersTable.jsx'
 import './parts-search.css'
 
-function PanelHeading({ id, step, title, count }) {
-  return <div className="catalog-panel-heading">
-    <span className="panel-step" aria-label={'Этап ' + step}>0{step}</span>
-    <h2 id={id}>{title}</h2>
-    {count != null && <span className="panel-count">{count.toLocaleString('ru-RU')}</span>}
-  </div>
+const examples = ['01089', '7160500039S']
+
+function ResultsPanel({ id, step, title, count, status, children }) {
+  const panel = useRef(null)
+  useEffect(() => {
+    // Retry keeps focus on the panel while its contents are replaced.
+    if (document.activeElement !== panel.current) return
+    if (status === 'success' || status === 'error') {
+      const target = panel.current.querySelector('[role="listbox"], .offers-viewport')
+        ?? panel.current.querySelector('button')
+      target?.focus()
+    }
+  }, [status])
+  return <section className="catalog-panel" ref={panel} aria-labelledby={id} tabIndex={-1}>
+    <div className="catalog-panel-heading">
+      <span className="panel-step" aria-label={'Этап ' + step}>0{step}</span>
+      <h2 id={id}>{title}</h2>
+      {status === 'success' && <span className="panel-count">{count.toLocaleString('ru-RU')}</span>}
+    </div>
+    {children}
+  </section>
+}
+
+function searchStatus(search) {
+  if (search.offersStatus === 'loading') return 'Загружаем предложения…'
+  if (search.offersStatus === 'success') return `Предложений для ${search.brand}: ${search.offers.length.toLocaleString('ru-RU')}.`
+  if (search.offersStatus === 'error') return ''
+  if (search.brandsStatus === 'loading') return 'Ищем производителей…'
+  if (search.brandsStatus === 'success') return `Производителей для артикула ${search.article}: ${search.brands.length.toLocaleString('ru-RU')}.`
+  return ''
 }
 
 export default function PartsSearch() {
@@ -33,6 +57,7 @@ export default function PartsSearch() {
         </div>
       </header>
       <main className="catalog-wrap catalog-workspace" id="catalog-main" tabIndex={-1}>
+        <span className="visually-hidden" role="status" aria-atomic="true">{searchStatus(search)}</span>
         <section className="search-module" aria-labelledby="search-title">
           <div className="drawing-field"><BearingDrawing /></div>
           <div className="search-content">
@@ -48,28 +73,28 @@ export default function PartsSearch() {
                 onClick={() => fillArticle('')}><X size={18} aria-hidden="true" /></button>}
             </div>
             <div className="article-examples">
-              <span>Например</span>
-              {['01089', '7160500039S'].map(example =>
+              <span>{isDemo ? 'Артикулы для демо' : 'Например'}</span>
+              {examples.map(example =>
                 <button key={example} type="button" onClick={() => fillArticle(example)}>
                   {example}<ArrowUpRight size={13} aria-hidden="true" />
                 </button>)}
+              {search.brandsStatus === 'success' && search.brands.length > 0 &&
+                <a className="brands-jump" href="#brand-options">К производителям ({search.brands.length})</a>}
             </div>
           </div>
         </section>
         <div className="results-layout">
-          <section className="catalog-panel" aria-labelledby="brands-title">
-            <PanelHeading step={1} title="Производители" id="brands-title"
-              count={search.brandsStatus === 'success' ? search.brands.length : null} />
+          <ResultsPanel step={1} title="Производители" id="brands-title"
+            status={search.brandsStatus} count={search.brands.length}>
             <BrandList key={search.article} brands={search.brands} selected={search.brand}
               status={search.brandsStatus} error={search.brandsError} onRetry={search.retryBrands}
-              onSelect={search.selectBrand} />
-          </section>
-          <section className="catalog-panel" aria-labelledby="offers-title">
-            <PanelHeading step={2} title="Предложения" id="offers-title"
-              count={search.offersStatus === 'success' ? search.offers.length : null} />
+              onSelect={search.selectBrand} example={isDemo ? examples[0] : null} onExample={fillArticle} />
+          </ResultsPanel>
+          <ResultsPanel step={2} title="Предложения" id="offers-title"
+            status={search.offersStatus} count={search.offers.length}>
             <OffersTable key={search.article + ':' + search.brand} offers={search.offers}
               status={search.offersStatus} error={search.offersError} onRetry={search.retryOffers} />
-          </section>
+          </ResultsPanel>
         </div>
       </main>
     </div>

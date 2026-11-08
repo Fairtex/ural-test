@@ -1,10 +1,16 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowDownUp, ArrowUp, PackageSearch } from 'lucide-react'
 import PanelState from './PanelState.jsx'
 
 const currency = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' })
 const quantity = new Intl.NumberFormat('ru-RU')
+const sortOptions = [
+  { value: 'price-asc', key: 'price', ascending: true, label: 'Цена: сначала дешевле' },
+  { value: 'price-desc', key: 'price', ascending: false, label: 'Цена: сначала дороже' },
+  { value: 'stock-desc', key: 'stock', ascending: false, label: 'Остаток: сначала больше' },
+  { value: 'stock-asc', key: 'stock', ascending: true, label: 'Остаток: сначала меньше' },
+]
 
 function OfferRows({ offers }) {
   const viewport = useRef(null)
@@ -18,25 +24,38 @@ function OfferRows({ offers }) {
       return sort.ascending ? a - b : b - a
     })
   }, [offers, sort])
+  const getItemKey = useCallback(index => rows[index].id, [rows])
   const virtual = useVirtualizer({
     count: rows.length,
     getScrollElement: () => viewport.current,
     estimateSize: () => 82,
-    getItemKey: index => rows[index].id,
+    getItemKey,
     overscan: 5,
   })
+  useLayoutEffect(() => {
+    virtual.scrollToOffset(0)
+  }, [sort, virtual])
+
   function sortHeader(key, label) {
     const current = sort?.key === key
     const Icon = current ? (sort.ascending ? ArrowUp : ArrowDown) : ArrowDownUp
     function toggle() {
       setSort({ key, ascending: current ? !sort.ascending : key === 'price' })
-      viewport.current.scrollTop = 0
     }
     return <div role="columnheader" aria-sort={current ? (sort.ascending ? 'ascending' : 'descending') : 'none'}>
+      <span className="mobile-column-label">{label}</span>
       <button onClick={toggle} className="sort-control">{label}<Icon size={13} aria-hidden="true" /></button>
     </div>
   }
   return (
+    <>
+    <label className="mobile-sort">Сортировка
+      <select value={sort ? `${sort.key}-${sort.ascending ? 'asc' : 'desc'}` : ''}
+        onChange={event => setSort(sortOptions.find(option => option.value === event.target.value) ?? null)}>
+        <option value="">Исходный порядок</option>
+        {sortOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>
     <div className="offers-table" role="table" aria-labelledby="offers-title"
       aria-rowcount={rows.length + 1} aria-colcount={4}>
       <div className="offers-heading offers-grid" role="row" aria-rowindex={1}>
@@ -67,6 +86,7 @@ function OfferRows({ offers }) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
