@@ -1,8 +1,18 @@
 const endpoint = 'https://api.favorit-parts.ru/hs/hsprice/'
+const route = '/api/parts'
 
 function sendError(response, status, error) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
   response.end(JSON.stringify({ error }))
+}
+
+function isAllowedOrigin(request) {
+  const site = request.headers['sec-fetch-site']
+  if (site && site !== 'same-origin' && site !== 'none') return false
+
+  const origin = request.headers.origin
+  const protocol = request.socket.encrypted ? 'https' : 'http'
+  return origin === undefined || origin === `${protocol}://${request.headers.host}`
 }
 
 // Dev-only endpoint. The browser sends only the part number and optional brand.
@@ -11,17 +21,20 @@ export function favoritProxy(apiKey) {
     name: 'favorit-local-api',
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
-        const url = new URL(request.url, 'http://localhost')
-        if (url.pathname !== '/api/parts') return next()
+        const target = request.url
+        if (target.startsWith('//')) return sendError(response, 400, 'Некорректный путь запроса.')
+        if (target !== route && !target.startsWith(route + '?')) return next()
         if (request.method !== 'GET') return sendError(response, 405, 'Разрешён только GET.')
+        if (!isAllowedOrigin(request)) return sendError(response, 403, 'Запрос с другого источника запрещён.')
         if (!apiKey) return sendError(response, 503, 'Укажите FAVORIT_API_KEY для локального сервера.')
 
-        const number = url.searchParams.get('number')?.trim()
+        const params = new URLSearchParams(target.slice(route.length))
+        const number = params.get('number')?.trim()
         if (!number) return sendError(response, 400, 'Введите артикул.')
         const upstream = new URL(endpoint)
         upstream.searchParams.set('key', apiKey)
         upstream.searchParams.set('number', number)
-        const brand = url.searchParams.get('brand')
+        const brand = params.get('brand')
         if (brand) {
           upstream.searchParams.set('brand', brand)
           upstream.searchParams.set('analogues', 'on')
