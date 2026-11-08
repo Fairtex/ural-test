@@ -6,3 +6,4 @@ dist/
 .agents/
 .idea/
 *.local
+output
