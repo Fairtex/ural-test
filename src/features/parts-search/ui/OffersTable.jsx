@@ -1,0 +1,79 @@
+import { useMemo, useRef, useState } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { ArrowDown, ArrowDownUp, ArrowUp, PackageSearch } from 'lucide-react'
+import PanelState from './PanelState.jsx'
+
+const currency = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' })
+const quantity = new Intl.NumberFormat('ru-RU')
+
+function OfferRows({ offers }) {
+  const viewport = useRef(null)
+  const [sort, setSort] = useState(null)
+  const rows = useMemo(() => {
+    if (!sort) return offers
+    return [...offers].sort((left, right) => {
+      const a = left[sort.key]
+      const b = right[sort.key]
+      if (a == null || b == null) return Number(a == null) - Number(b == null)
+      return sort.ascending ? a - b : b - a
+    })
+  }, [offers, sort])
+  const virtual = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => viewport.current,
+    estimateSize: () => 82,
+    getItemKey: index => rows[index].id,
+    overscan: 5,
+  })
+  function sortHeader(key, label) {
+    const current = sort?.key === key
+    const Icon = current ? (sort.ascending ? ArrowUp : ArrowDown) : ArrowDownUp
+    function toggle() {
+      setSort({ key, ascending: current ? !sort.ascending : key === 'price' })
+      viewport.current.scrollTop = 0
+    }
+    return <div role="columnheader" aria-sort={current ? (sort.ascending ? 'ascending' : 'descending') : 'none'}>
+      <button onClick={toggle} className="sort-control">{label}<Icon size={13} aria-hidden="true" /></button>
+    </div>
+  }
+  return (
+    <div className="offers-table" role="table" aria-labelledby="offers-title"
+      aria-rowcount={rows.length + 1} aria-colcount={4}>
+      <div className="offers-heading offers-grid" role="row" aria-rowindex={1}>
+        <div role="columnheader">Деталь</div>
+        <div role="columnheader">Склад</div>
+        {sortHeader('stock', 'Остаток')}
+        {sortHeader('price', 'Цена')}
+      </div>
+      <div className="offers-viewport" ref={viewport} tabIndex={0} role="rowgroup" aria-label="Строки предложений">
+        <div role="presentation" style={{ height: virtual.getTotalSize(), position: 'relative' }}>
+          {virtual.getVirtualItems().map(item => {
+            const row = rows[item.index]
+            return <div className="offer-row offers-grid" role="row" key={item.key} data-index={item.index}
+              aria-rowindex={item.index + 2} ref={virtual.measureElement}
+              style={{ transform: 'translateY(' + item.start + 'px)' }}>
+              <div role="cell" className="offer-detail">
+                <strong>{row.name}</strong>
+                <span>{row.brand} · <span className="part-number">{row.number}</span></span>
+                {row.isOriginal && <small>Искомая деталь</small>}
+              </div>
+              <div role="cell" className="offer-warehouse">{row.warehouse || '—'}</div>
+              <div role="cell" className={'offer-stock' + (row.stock > 0 ? ' available' : '')}>
+                {row.stock == null ? '—' : quantity.format(row.stock) + ' шт.'}
+              </div>
+              <div role="cell" className="offer-price">{row.price == null ? '—' : currency.format(row.price)}</div>
+            </div>
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function OffersTable({ offers, status, error, onRetry }) {
+  if (status === 'loading') return <PanelState loading title="Загружаем предложения…" />
+  if (status === 'error') return <PanelState error title="Не удалось загрузить предложения" description={error} onRetry={onRetry} />
+  if (status === 'idle') return <PanelState icon={PackageSearch} title="Выберите производителя" description="Покажем исходную деталь и её аналоги, цены и остатки на складах." />
+  if (!offers.length) return <PanelState icon={PackageSearch} title="Предложений пока нет" description="Попробуйте выбрать другого производителя." />
+  return <OfferRows offers={offers} />
+}

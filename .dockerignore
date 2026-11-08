@@ -1,0 +1,7 @@
+.git
+.agent
+.agents
+.idea
+node_modules
+dist
+.env*
