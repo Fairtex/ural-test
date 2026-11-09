@@ -47,19 +47,6 @@
 }
 .catalog-wordmark svg { color: var(--forest); flex: none; }
 .header-section { border-left: 1px solid var(--line); padding-left: 22px; color: var(--muted); font-size: .9rem; }
-.data-mode {
-  margin-left: auto;
-  color: #3b5547;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid #cbd8ce;
-  background: #f1f6f1;
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-size: .82rem;
-  font-weight: 600;
-}
 .catalog-workspace { padding-block: 34px 64px; }
 .search-module {
   isolation: isolate;
@@ -136,7 +123,6 @@
 .catalog-panel { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: clip; }
 .catalog-panel-heading { display: flex; align-items: center; gap: 11px; padding: 18px 22px; min-height: 68px; border-bottom: 1px solid var(--line); }
 .catalog-panel-heading h2 { min-width: 0; overflow-wrap: anywhere; margin: 0; font-size: clamp(1.05rem, 1.4vw, 1.25rem); line-height: 1.25; font-weight: 650; letter-spacing: -.035em; }
-.panel-step { display: inline-grid; flex: none; place-items: center; height: 28px; min-width: 30px; padding: 0 3px; color: #526457; font: .79rem/1 var(--mono); background: #edf1ec; border: 1px solid #dbe3d9; border-radius: 5px; }
 .panel-count { margin-left: auto; font: .81rem/1.3 var(--mono); color: var(--muted); }
 .panel-state { min-height: 225px; padding: 30px 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 .state-symbol { display: inline-grid; width: 50px; height: 50px; place-items: center; color: #607565; border: 1px solid #dfe6df; background: #f5f7f3; border-radius: 14px; margin-bottom: 15px; }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { ArrowUpRight, Component, Database, Search, X } from 'lucide-react'
+import { ArrowUpRight, Component, Search, X } from 'lucide-react'
 import usePartsSearch from './model/usePartsSearch.js'
 import { isDemo } from './api/partsApi.js'
 import BearingDrawing from './ui/BearingDrawing.jsx'
@@ -9,7 +9,7 @@ import './parts-search.css'
 
 const examples = ['01089', '7160500039S']
 
-function ResultsPanel({ id, step, title, count, status, children }) {
+function ResultsPanel({ id, title, count, status, children }) {
   const panel = useRef(null)
   useEffect(() => {
     // Retry keeps focus on the panel while its contents are replaced.
@@ -22,7 +22,6 @@ function ResultsPanel({ id, step, title, count, status, children }) {
   }, [status])
   return <section className="catalog-panel" ref={panel} aria-labelledby={id} tabIndex={-1}>
     <div className="catalog-panel-heading">
-      <span className="panel-step" aria-label={'Этап ' + step}>0{step}</span>
       <h2 id={id}>{title}</h2>
       {status === 'success' && <span className="panel-count">{count.toLocaleString('ru-RU')}</span>}
     </div>
@@ -53,7 +52,6 @@ export default function PartsSearch() {
         <div className="catalog-wrap header-inner">
           <span className="catalog-wordmark"><Component size={28} strokeWidth={2} aria-hidden="true" />Деталь</span>
           <span className="header-section">Каталог запчастей</span>
-          <span className="data-mode"><Database size={15} aria-hidden="true" />{isDemo ? 'Деморежим' : 'Данные Фаворит'}</span>
         </div>
       </header>
       <main className="catalog-wrap catalog-workspace" id="catalog-main" tabIndex={-1}>
@@ -84,13 +82,13 @@ export default function PartsSearch() {
           </div>
         </section>
         <div className="results-layout">
-          <ResultsPanel step={1} title="Производители" id="brands-title"
+          <ResultsPanel title="Производители" id="brands-title"
             status={search.brandsStatus} count={search.brands.length}>
             <BrandList key={search.article} brands={search.brands} selected={search.brand}
               status={search.brandsStatus} error={search.brandsError} onRetry={search.retryBrands}
               onSelect={search.selectBrand} example={isDemo ? examples[0] : null} onExample={fillArticle} />
           </ResultsPanel>
-          <ResultsPanel step={2} title="Предложения" id="offers-title"
+          <ResultsPanel title="Предложения" id="offers-title"
             status={search.offersStatus} count={search.offers.length}>
             <OffersTable key={search.article + ':' + search.brand} offers={search.offers}
               status={search.offersStatus} error={search.offersError} onRetry={search.retryOffers} />
